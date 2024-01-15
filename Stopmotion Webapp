@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stop Motion Studio</title>
+  <!-- Link to Nunito Bold font from Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700&display=swap">
+
+  <style>
+    body {
+      font-family: 'Nunito', Arial, sans-serif; /* Use Nunito Bold as the primary font */
+      font-weight: 700; /* Ensure bold weight */
+      margin: 0;
+      padding: 0;
+      background-color: #303030; /* Darkish grey background */
+    }
+
+    #camera-container {
+      position: relative;
+    }
+
+    #camera {
+      display: block;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #404040; /* Darker grey for controls */
+      padding: 10px;
+      text-align: center;
+      border-top: 2px solid #606060; /* Lighter grey outline */
+    }
+
+    input[type="range"] {
+      width: 80%;
+      background-color: #404040; /* Darker grey for range input */
+      border: 1px solid #606060; /* Lighter grey outline for range input */
+      color: white; /* White text for range input */
+    }
+
+    #frames-container {
+      display: flex;
+      overflow-x: auto;
+      padding: 10px;
+      background-color: #404040; /* Darker grey for frames container */
+    }
+
+    .frame {
+      width: 80px;
+      height: 60px;
+      margin-right: 5px;
+      cursor: pointer;
+      border: 1px solid #606060; /* Lighter grey outline for frames */
+    }
+
+    button {
+      font-family: 'Nunito', Arial, sans-serif; /* Use Nunito Bold for buttons */
+      font-weight: 700; /* Ensure bold weight */
+      background-color: white;
+      color: #303030; /* Darkish grey text for buttons */
+      padding: 8px 16px;
+      margin: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #f0f0f0; /* Lighter grey on hover */
+    }
+
+    /* Additional styles for the grid overlay */
+    #camera-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    .grid-line {
+      position: absolute;
+      background-color: #ffffff; /* White color for grid lines */
+      opacity: 0.5; /* Adjust the opacity as needed */
+    }
+
+    .horizontal-line {
+      width: 100%;
+      height: 1px;
+    }
+
+    .vertical-line {
+      width: 1px;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="camera-container">
+    <video id="camera" width="100%" height="auto" autoplay></video>
+    <div id="camera-grid"></div>
+  </div>
+  <div id="controls">
+    <button onclick="captureFrame()">Capture Frame</button>
+    <input type="range" id="onionskinSlider" min="0" max="100" value="0" step="1" onchange="updateOnionskin()">
+    <label for="onionskinSlider" style="color: white;">Onionskin Filter</label>
+    <button onclick="playStopMotion()">Play</button>
+    <button onclick="downloadFrames()">Download Frames</button>
+    <button onclick="toggleGrid()">Toggle Grid</button>
+  </div>
+  <div id="frames-container"></div>
+
+  <script>
+    const video = document.getElementById('camera');
+    const onionskinSlider = document.getElementById('onionskinSlider');
+    const framesContainer = document.getElementById('frames-container');
+    const cameraGrid = document.getElementById('camera-grid');
+    let mediaStream;
+    let frames = [];
+    let currentFrameIndex = 0;
+    let isGridVisible = false;
+
+    async function startCamera() {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = mediaStream;
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+      }
+    }
+
+    function captureFrame() {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      frames.push(canvas.toDataURL('image/png'));
+
+      const frameElement = document.createElement('div');
+      frameElement.classList.add('frame');
+      frameElement.style.backgroundImage = `url(${frames[frames.length - 1]})`;
+      frameElement.onclick = () => showFrame(frames.length - 1);
+      framesContainer.appendChild(frameElement);
+    }
+
+    function updateOnionskin() {
+      // Implement logic to update onionskin filter based on the slider value
+      const onionskinValue = onionskinSlider.value;
+      // Update onionskin styling or perform other relevant actions
+    }
+
+    function playStopMotion() {
+      const playbackInterval = 100; // Set the playback interval in milliseconds
+
+      const playback = setInterval(() => {
+        if (currentFrameIndex < frames.length) {
+          showFrame(currentFrameIndex);
+          currentFrameIndex++;
+        } else {
+          clearInterval(playback);
+          currentFrameIndex = 0;
+        }
+      }, playbackInterval);
+    }
+
+    function downloadFrames() {
+      frames.forEach((frame, index) => downloadFrame(frame, index + 1));
+    }
+
+    function downloadFrame(frameDataUrl, index) {
+      const a = document.createElement('a');
+      a.href = frameDataUrl;
+      a.download = `frame_${index}.png`;
+      a.click();
+    }
+
+    function showFrame(index) {
+      video.src = frames[index];
+    }
+
+    function toggleGrid() {
+      isGridVisible = !isGridVisible;
+      cameraGrid.style.display = isGridVisible ? 'block' : 'none';
+    }
+
+    function createGrid() {
+      const rows = 3;
+      const cols = 3;
+
+      const cellWidth = 100 / cols;
+      const cellHeight = 100 / rows;
+
+      for (let i = 1; i < rows; i++) {
+        const horizontalLine = document.createElement('div');
+        horizontalLine.classList.add('grid-line', 'horizontal-line');
+        horizontalLine.style.top = `${i * cellHeight}%`;
+        cameraGrid.appendChild(horizontalLine);
+      }
+
+      for (let j = 1; j < cols; j++) {
+        const verticalLine = document.createElement('div');
+        verticalLine.classList.add('grid-line', 'vertical-line');
+        verticalLine.style.left = `${j * cellWidth}%`;
+        cameraGrid.appendChild(verticalLine);
+      }
+    }
+
+    // Initialize camera and grid on page load
+    startCamera();
+    createGrid();
+  </script>
+</body>
+</html>

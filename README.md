@@ -1,4 +1,5 @@
-# Stop-motion-Webapp
+# Stop-motion-Webapp**
+IM STILL WORKING ON THIS**
 A website you can add to your homescreen (ios) to have a stopmotion app.
 1. go to safari
 2. click share button
